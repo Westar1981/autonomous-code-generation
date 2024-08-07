@@ -1,0 +1,48 @@
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+
+    - name: Install dependencies
+      run: |
+        python -m venv env
+        source env/bin/activate
+        pip install rasa spacy transformers
+
+    - name: Run tests
+      run: |
+        source env/bin/activate
+        # Add your test commands here
+
+    - name: Build Docker image
+      run: |
+        docker build -t autonomous-code-generation .
+
+    - name: Push Docker image
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        docker tag autonomous-code-generation ghcr.io/${{ github.repository }}/autonomous-code-generation:latest
+        docker push ghcr.io/${{ github.repository }}/autonomous-code-generation:latest
+
+    - name: Deploy to Kubernetes
+      run: |
+        # Add your Kubernetes deployment commands here
